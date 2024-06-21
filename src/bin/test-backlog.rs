@@ -6,7 +6,7 @@ use std::{os::fd::AsRawFd, str::FromStr};
 
 fn main() {
     println!("Testing backlog...");
-    for backlog_size in 0..5 {
+    for backlog_size in -1..5 {
         let server_socket = socket(
             AddressFamily::Inet,
             SockType::Stream,
@@ -22,6 +22,7 @@ fn main() {
         listen(&server_socket, Backlog::new(backlog_size).unwrap())
             .expect("Server socket listen fails");
         let mut successful_connections = vec![];
+        let mut attempts = 0;
         loop {
             let client_socket = socket(
                 AddressFamily::Inet,
@@ -31,18 +32,18 @@ fn main() {
             )
             .expect("Client socket creation fails");
 
+            attempts += 1;
             match connect(client_socket.as_raw_fd(), &server_address) {
                 Ok(_) => successful_connections.push(client_socket),
-                Err(_) => {
-                    break;
-                }
+                Err(_) => break,
             }
         }
 
         println!(
-            "Backlog {} successful connections: {}",
+            "Backlog {} successful connections: {} - attempts: {}",
             backlog_size,
-            successful_connections.len()
+            successful_connections.len(),
+            attempts
         );
     }
 }
